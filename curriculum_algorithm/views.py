@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from curriculum_algorithm.models import Semester, StudentPlan, CurriculumCourse
-from curriculum_algorithm.serializers import StudentPlanSerializer, SemesterSerializer, UserSerializer
+from curriculum_algorithm.serializers import StudentPlanSerializer, \
+    SemesterSerializer, UserSerializer
 
 
 @api_view(['POST'])
@@ -18,13 +19,15 @@ def transfer_course(request):
     updated_semesters = []
     if source_semester_pk is not None:
         source_semester = Semester.objects.get(pk=source_semester_pk)
-        source_semester.curriculum_courses.remove(course)
+        source_semester.remove_curriculum_course(course)
         updated_semesters.append(source_semester_pk)
     if destination_semester_pk is not None:
         new_semester = Semester.objects.get(pk=data['new_semester'])
-        new_semester.curriculum_courses.add(course)
+        new_semester.student_plan.force_accommodate(
+            new_semester.position,
+            course)
         updated_semesters.append(destination_semester_pk)
-    result = Semester.objects.filter(id__in=updated_semesters)
+    result = Semester.objects.all()
     return Response(SemesterSerializer(result, many=True).data)
 
 
